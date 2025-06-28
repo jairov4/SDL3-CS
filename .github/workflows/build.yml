@@ -84,20 +84,32 @@ jobs:
           submodules: true
 
       - name: Build (iOS)
-        run: xcodebuild -project External/SDL/Xcode/SDL/SDL.xcodeproj -target SDL3.xcframework -configuration Release
+        run: |
+          xcodebuild -project External/SDL/Xcode/SDL/SDL.xcodeproj -target SDL3.xcframework -configuration Release
+          xcodebuild -project External/SDL/Xcode/SDL_image.xcodeproj -target SDL3_image.xcframework -configuration Release
+          xcodebuild -project External/SDL/Xcode/SDL_ttf.xcodeproj -target SDL3_ttf.xcframework -configuration Release
+          xcodebuild -project External/SDL/Xcode/SDL_mixer.xcodeproj -target SDL3_mixer.xcframework -configuration Release
 
       - name: Prepare release directory (iOS)
         run: mkdir -p native/ios
 
       - name: Prepare release (iOS)
         run: |
-          mkdir -p native/ios/SDL3.xcframework/ios-arm64/SDL3.framework;
-          mkdir -p native/ios/SDL3.xcframework/ios-arm64_x86_64-simulator/SDL3.framework;
-          cp External/SDL/Xcode/SDL/build/SDL3.xcframework/Info.plist                                           native/ios/SDL3.xcframework/Info.plist;
-          cp External/SDL/Xcode/SDL/build/SDL3.xcframework/ios-arm64/SDL3.framework/SDL3                        native/ios/SDL3.xcframework/ios-arm64/SDL3.framework/SDL3;
-          cp External/SDL/Xcode/SDL/build/SDL3.xcframework/ios-arm64/SDL3.framework/Info.plist                  native/ios/SDL3.xcframework/ios-arm64/SDL3.framework/Info.plist;
-          cp External/SDL/Xcode/SDL/build/SDL3.xcframework/ios-arm64_x86_64-simulator/SDL3.framework/SDL3       native/ios/SDL3.xcframework/ios-arm64_x86_64-simulator/SDL3.framework/SDL3;
-          cp External/SDL/Xcode/SDL/build/SDL3.xcframework/ios-arm64_x86_64-simulator/SDL3.framework/Info.plist native/ios/SDL3.xcframework/ios-arm64_x86_64-simulator/SDL3.framework/Info.plist;
+          modules=("SDL3" "SDL3_image" "SDL3_ttf" "SDL3_mixer")
+          architectures=("ios-arm64" "ios-arm64_x86_64-simulator")
+
+          for module in "${modules[@]}"; do
+            for arch in "${architectures[@]}"; do
+              mkdir -p native/ios/${module}.xcframework/${arch}/${module}.framework
+            done
+
+            cp External/SDL/Xcode/SDL/build/${module}.xcframework/Info.plist native/ios/${module}.xcframework/Info.plist
+
+            for arch in "${architectures[@]}"; do
+              cp External/SDL/Xcode/SDL/build/${module}.xcframework/${arch}/${module}.framework/${module} native/ios/${module}.xcframework/${arch}/${module}.framework/${module}
+              cp External/SDL/Xcode/SDL/build/${module}.xcframework/${arch}/${module}.framework/Info.plist native/ios/${module}.xcframework/${arch}/${module}.framework/Info.plist
+            done
+          done
 
       - name: Compress native directory
         run: tar -cf native-ios.tar native/ios
