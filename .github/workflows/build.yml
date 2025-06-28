@@ -118,7 +118,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          submodules: true
+          submodules: recursive
 
       - name: Setup JDK
         uses: actions/setup-java@v4
@@ -127,6 +127,11 @@ jobs:
           java-version: |
             11
             17
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
 
       - name: Install Android SDK Manager
         uses: android-actions/setup-android@v3
@@ -138,14 +143,33 @@ jobs:
           sdkmanager --install "platform-tools" "platforms;$PLATFORM_VER"
           sdkmanager --install "ndk;$NDK_VER" --channel=3
 
+      - name: Install CMake
+        uses: ssrobins/install-cmake@v1
+        with:
+          version: 3.24.3
+
       - name: Build (Android)
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           export PATH=$ANDROID_HOME/ndk/$NDK_VER:$PATH
           export OUTPUT=$PWD/native/android
           rm -rf $OUTPUT && mkdir -p $OUTPUT
 
-          # Build SDL3
-          ./External/SDL/build-scripts/androidbuildlibs.sh APP_ABI="armeabi-v7a arm64-v8a x86 x86_64" NDK_LIBS_OUT="$OUTPUT"
+          # Build
+          modules=("SDL" "SDL_image" "SDL_ttf" "SDL_mixer")
+          for module in "${modules[@]}"; do
+            python External/$module/build-scripts/build-release.py --actions download android
+          done
+
+          # Copy binaries
+          architectures=("armeabi-v7a" "arm64-v8a" "x86" "x86_64")
+          for module in "${modules[@]}"; do
+            for arch in "${architectures[@]}"; do
+              mkdir -p "$OUTPUT/${arch}"
+              cp External/$module/install-android/${arch}-install/lib/*.so $OUTPUT/${arch}/
+            done
+          done
 
       - name: Build SDL3 Android Java
         run: |
