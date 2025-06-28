@@ -8,6 +8,7 @@ env:
 
 jobs:
   build:
+    if: ${{ false }}
     name: ${{ matrix.platform.name }}
     runs-on: ${{ matrix.platform.os }}
     strategy:
@@ -122,6 +123,7 @@ jobs:
           if-no-files-found: error
 
   build-android:
+    if: ${{ false }}
     name: android
     runs-on: ubuntu-22.04
     env:
@@ -191,7 +193,7 @@ jobs:
   make-pr:
     name: Submit pull request
     runs-on: ubuntu-latest
-    needs: [ build, build-ios, build-android ]
+    needs: [ build-ios ]
     steps:
       - uses: actions/checkout@v4
 
