@@ -90,12 +90,12 @@ jobs:
           architectures=("ios-arm64" "ios-arm64_x86_64-simulator")
 
           for module in "${modules[@]}"; do
+            module0="${module/SDL3/SDL}"
             directory="External/${module0}/Xcode"
             if [ "$module" == "SDL3" ]; then
               directory+="/SDL"
             fi
 
-            module0="${module/SDL3/SDL}"
             target="${module}.xcframework"
             framework="${module}.framework"
             output_dir="native/ios/${target}"
