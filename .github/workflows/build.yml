@@ -86,30 +86,31 @@ jobs:
 
       - name: Build (iOS)
         run: |
-          xcodebuild -project External/SDL/Xcode/SDL/SDL.xcodeproj -target SDL3.xcframework -configuration Release
-          xcodebuild -project External/SDL/Xcode/SDL_image.xcodeproj -target SDL3_image.xcframework -configuration Release
-          xcodebuild -project External/SDL/Xcode/SDL_ttf.xcodeproj -target SDL3_ttf.xcframework -configuration Release
-          xcodebuild -project External/SDL/Xcode/SDL_mixer.xcodeproj -target SDL3_mixer.xcframework -configuration Release
-
-      - name: Prepare release directory (iOS)
-        run: mkdir -p native/ios
-
-      - name: Prepare release (iOS)
-        run: |
           modules=("SDL3" "SDL3_image" "SDL3_ttf" "SDL3_mixer")
           architectures=("ios-arm64" "ios-arm64_x86_64-simulator")
 
           for module in "${modules[@]}"; do
-            for arch in "${architectures[@]}"; do
-              mkdir -p native/ios/${module}.xcframework/${arch}/${module}.framework
-            done
+            directory="External/${module0}/Xcode"
+            if [ "$module" == "SDL3" ]; then
+              directory+="/SDL"
+            fi
 
-            cp External/SDL/Xcode/SDL/build/${module}.xcframework/Info.plist native/ios/${module}.xcframework/Info.plist
+            module0="${module/SDL3/SDL}"
+            target="${module}.xcframework"
+            framework="${module}.framework"
+            output_dir="native/ios/${target}"
+
+            xcodebuild -project "${directory}/${module0}.xcodeproj" -target "${target}" -configuration Release
+            build_dir="${directory}/build/${target}"
+
+            ls -lRh "${directory}"
 
             for arch in "${architectures[@]}"; do
-              cp External/SDL/Xcode/SDL/build/${module}.xcframework/${arch}/${module}.framework/${module} native/ios/${module}.xcframework/${arch}/${module}.framework/${module}
-              cp External/SDL/Xcode/SDL/build/${module}.xcframework/${arch}/${module}.framework/Info.plist native/ios/${module}.xcframework/${arch}/${module}.framework/Info.plist
+              mkdir -p "${output_dir}/${arch}/${framework}"
+              cp "${build_dir}/${arch}/${framework}/${module}" "${output_dir}/${arch}/${framework}/${module}"
+              cp "${build_dir}/${arch}/${framework}/Info.plist" "${output_dir}/${arch}/${framework}/Info.plist"
             done
+            cp "${build_dir}/Info.plist" "${output_dir}/Info.plist"
           done
 
       - name: Compress native directory
